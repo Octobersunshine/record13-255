@@ -1,4 +1,5 @@
 from integral_service import IntegralService, compute_integral
+import math
 
 
 def main():
@@ -28,7 +29,7 @@ def main():
         print(f"  步长: {info['step_size']:.6e}")
 
     print("\n" + "=" * 60)
-    print("--- 自适应辛普森法 (tol=1e-10) ---")
+    print("--- 递归自适应辛普森法 (tol=1e-10) ---")
 
     adaptive_examples = [
         ("x**2", 0, 1),
@@ -41,15 +42,50 @@ def main():
         print(f"\n∫ {expr} dx, [{a}, {b}]")
         print(f"  结果: {result:.12f}")
         print(f"  收敛: {info['converged']}")
-        print(f"  迭代次数: {info['iterations']}")
+        print(f"  递归次数: {info['recursions']}")
         print(f"  采样点数: {info['num_points']}")
-        print(f"  实际误差: {info['actual_error']:.2e}")
+        print(f"  区间数: {info['intervals']}")
+
+    print("\n" + "=" * 60)
+    print("--- 震荡/尖峰函数对比：固定步长 vs 自适应 ---")
+
+    oscillatory_examples = [
+        {
+            "expr": "exp(-x**2 / 0.001)",
+            "a": -10,
+            "b": 10,
+            "desc": "尖峰函数 exp(-x²/0.001)，区间 [-10, 10]",
+            "ref_pts": 50001,
+        },
+        {
+            "expr": "x * sin(1/x)",
+            "a": 0.01,
+            "b": 1.0,
+            "desc": "震荡函数 x·sin(1/x)，区间 [0.01, 1]",
+            "ref_pts": 50001,
+        },
+    ]
+
+    for ex in oscillatory_examples:
+        print(f"\n{ex['desc']}")
+        ref_result, _ = service.integrate(ex["expr"], ex["a"], ex["b"], num_points=ex["ref_pts"])
+        print(f"  参考值 (n={ex['ref_pts']}): {ref_result:.10f}")
+
+        print(f"  固定步长:")
+        for n in [11, 101, 1001]:
+            result, info = service.integrate(ex["expr"], ex["a"], ex["b"], num_points=n)
+            err = abs(result - ref_result)
+            print(f"    n={n:>5d}: 结果={result:.10f}, 误差={err:.2e}")
+
+        result_adapt, info_adapt = service.integrate_adaptive(ex["expr"], ex["a"], ex["b"], tol=1e-8)
+        err_adapt = abs(result_adapt - ref_result)
+        print(f"  递归自适应:  结果={result_adapt:.10f}, 误差={err_adapt:.2e}, 采样点={info_adapt['num_points']}")
 
     print("\n" + "=" * 60)
     print("--- 使用 compute_integral 快捷函数 ---")
     result, info = compute_integral("cos(x)", 0, 1.5707963267948966, adaptive=True, tol=1e-12)
     print(f"\n∫ cos(x) dx, [0, π/2] = {result:.12f}")
-    print(f"  收敛: {info['converged']}, 迭代: {info['iterations']}")
+    print(f"  收敛: {info['converged']}, 区间数: {info['intervals']}")
 
     print("\n" + "=" * 60)
     print("--- 使用 Python 函数作为输入 ---")
