@@ -1,4 +1,4 @@
-from integral_service import IntegralService, compute_integral
+from integral_service import IntegralService, compute_integral, compute_derivative
 import math
 
 
@@ -6,7 +6,7 @@ def main():
     service = IntegralService(num_points=10001)
 
     print("=" * 60)
-    print("数值积分服务示例 - 辛普森法")
+    print("数值积分与微分服务示例")
     print("=" * 60)
 
     examples = [
@@ -88,7 +88,7 @@ def main():
     print(f"  收敛: {info['converged']}, 区间数: {info['intervals']}")
 
     print("\n" + "=" * 60)
-    print("--- 使用 Python 函数作为输入 ---")
+    print("--- 积分：使用 Python 函数作为输入 ---")
     def f(x):
         return x**3 + 2*x**2 - 5*x + 1
 
@@ -98,6 +98,58 @@ def main():
     print(f"  数值结果: {result:.10f}")
     print(f"  精确值:   {exact_value:.10f}")
     print(f"  误差:     {abs(result - exact_value):.2e}")
+
+    print("\n" + "=" * 60)
+    print("--- 数值微分：一阶导数 ---")
+
+    diff_examples_1 = [
+        ("sin(x)", 0.5, math.cos(0.5), "sin'(0.5) = cos(0.5)"),
+        ("exp(x)", 1.0, math.exp(1.0), "exp'(1) = e"),
+        ("x**3 + 2*x**2", 2.0, 3*4 + 4*2, "(x³+2x²)'(2) = 20"),
+    ]
+
+    for expr, x0, exact, desc in diff_examples_1:
+        result, info = service.differentiate(expr, x0, order=1)
+        err = abs(result - exact)
+        print(f"\n{desc}")
+        print(f"  表达式: {expr}")
+        print(f"  结果: {result:.10f}")
+        print(f"  精确值: {exact:.10f}")
+        print(f"  误差: {err:.2e}")
+        print(f"  方法: {info['method']}")
+
+    print("\n" + "=" * 60)
+    print("--- 数值微分：高阶导数 ---")
+
+    print("\nsin(x) 在 x=π/4 的各阶导数:")
+    for order in [1, 2, 3, 4]:
+        x0 = math.pi / 4
+        result, info = service.differentiate("sin(x)", x0, order=order)
+        exact = math.sin(x0 + order * math.pi / 2)
+        err = abs(result - exact)
+        print(f"  {order}阶导数: {result:.10f}, 精确值: {exact:.10f}, 误差: {err:.2e}")
+
+    print("\n" + "=" * 60)
+    print("--- 使用 compute_derivative 快捷函数 ---")
+    result, info = compute_derivative("x**5", 2.0, order=3)
+    print(f"\nx⁵ 的三阶导数在 x=2 处: {result:.6f}")
+    print(f"  精确值: 240.0")
+    print(f"  误差估计: {info['error_estimate']:.2e}")
+
+    print("\n" + "=" * 60)
+    print("--- 微分：使用 Python 函数作为输入 ---")
+    def g(x):
+        return x**4 + 3*x**2 - 2*x + 5
+
+    result, info = service.differentiate(g, 1.0, order=2)
+    exact = 12*1 + 6  # 12x^2 + 6, wait: 4阶导数
+    # g'(x) = 4x^3 + 6x - 2
+    # g''(x) = 12x^2 + 6
+    exact = 12*1 + 6
+    print(f"\n(x⁴ + 3x² - 2x + 5)''(1)")
+    print(f"  数值结果: {result:.10f}")
+    print(f"  精确值:   {exact:.10f}")
+    print(f"  误差:     {abs(result - exact):.2e}")
 
 
 if __name__ == "__main__":
